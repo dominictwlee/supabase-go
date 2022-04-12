@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	postgrest "github.com/nedpals/postgrest-go/pkg"
+	postgrest "github.com/supabase/postgrest-go"
 )
 
 const (
@@ -39,6 +39,14 @@ func CreateClient(baseURL string, supabaseKey string, debug ...bool) *Client {
 	if err != nil {
 		panic(err)
 	}
+	dbClient := postgrest.NewClient(
+		parsedURL.String(),
+		"",
+		nil,
+	)
+
+	dbClient.TokenAuth(supabaseKey)
+
 	client := &Client{
 		BaseURL: baseURL,
 		apiKey:  supabaseKey,
@@ -46,17 +54,7 @@ func CreateClient(baseURL string, supabaseKey string, debug ...bool) *Client {
 		HTTPClient: &http.Client{
 			Timeout: time.Minute,
 		},
-		DB: postgrest.NewClient(
-			*parsedURL,
-			postgrest.WithTokenAuth(supabaseKey),
-			func(c *postgrest.Client) {
-				// debug parameter is only for postgrest-go for now
-				if len(debug) > 0 {
-					c.Debug = debug[0]
-				}
-				c.AddHeader("apikey", supabaseKey)
-			},
-		),
+		DB: dbClient,
 	}
 	client.Auth.client = client
 	return client
